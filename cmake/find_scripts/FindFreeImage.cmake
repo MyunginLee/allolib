@@ -3,51 +3,39 @@
 # Once done this will define
 #
 # FREEIMAGE_FOUND
-# FREEIMAGE_INCLUDE_PATH
-# FREEIMAGE_LIBRARY
+# FREEIMAGE_INCLUDE_DIRS
+# FREEIMAGE_LIBRARIES
 #
 
-IF (WIN32)
-	FIND_PATH( FREEIMAGE_INCLUDE_PATH FreeImage.h
-		${PROJECT_SOURCE_DIR}/windows/FreeImage/x32
-		DOC "The directory where FreeImage.h resides")
-	FIND_LIBRARY( FREEIMAGE_LIBRARY
-		NAMES FreeImage freeimage 
-		PATHS
-		${PROJECT_SOURCE_DIR}/windows/FreeImage/x32
-		DOC "The FreeImage library")
-ELSE (WIN32)
-	FIND_PATH( FREEIMAGE_INCLUDE_PATH FreeImage.h
-		/usr/include
-		/usr/local/include
-		/sw/include
-		/opt/local/include
-		DOC "The directory where FreeImage.h resides")
-	FIND_LIBRARY( FREEIMAGE_LIBRARY
-		NAMES FreeImage freeimage
-		PATHS
-		/usr/lib64
-		/usr/lib
-		/usr/local/lib64
-		/usr/local/lib
-		/sw/lib
-		/opt/local/lib
-		DOC "The FreeImage library")
-ENDIF (WIN32)
+FIND_PATH(FREEIMAGE_INCLUDE_DIRS FreeImage.h
+	/usr/include
+	/usr/local/include
+	/sw/include
+	/opt/local/include
+	DOC "The directory where FreeImage.h resides"
+)
 
-SET(FREEIMAGE_LIBRARIES ${FREEIMAGE_LIBRARY})
+FIND_LIBRARY(FREEIMAGE_LIBRARIES
+	NAMES FreeImage freeimage
+	PATHS
+	/usr/lib64
+	/usr/lib
+	/usr/local/lib64
+	/usr/local/lib
+	/sw/lib
+	/opt/local/lib
+	DOC "The FreeImage library"
+)
 
-IF (FREEIMAGE_INCLUDE_PATH AND FREEIMAGE_LIBRARY)
+IF (FREEIMAGE_INCLUDE_DIRS AND FREEIMAGE_LIBRARIES)
 	SET( FREEIMAGE_FOUND TRUE CACHE BOOL "Set to TRUE if FreeImage is found, FALSE otherwise")
-ELSE (FREEIMAGE_INCLUDE_PATH AND FREEIMAGE_LIBRARY)
+ELSE (FREEIMAGE_INCLUDE_DIRS AND FREEIMAGE_LIBRARIES)
 	SET( FREEIMAGE_FOUND FALSE CACHE BOOL "Set to TRUE if FreeImage is found, FALSE otherwise")
-ENDIF (FREEIMAGE_INCLUDE_PATH AND FREEIMAGE_LIBRARY)
-
-message(" ::::::::::::::: ${FREEIMAGE_LIBRARY} ${FREEIMAGE_INCLUDE_PATH}")
+ENDIF (FREEIMAGE_INCLUDE_DIRS AND FREEIMAGE_LIBRARIES)
 
 MARK_AS_ADVANCED(
 	FREEIMAGE_FOUND
-	FREEIMAGE_LIBRARY
 	FREEIMAGE_LIBRARIES
-	FREEIMAGE_INCLUDE_PATH)
+	FREEIMAGE_INCLUDE_DIRS
+)
 

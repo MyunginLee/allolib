@@ -2,6 +2,7 @@ branches:
   except:
   - modern_cmake
   - local
+  - devel-kee
 language: cpp
 dist: trusty
 os:

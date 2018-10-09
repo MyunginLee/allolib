@@ -99,12 +99,13 @@ endif ()
 add_library(al STATIC ${headers} ${sources})
 
 #paths
-set_target_properties(al
-  PROPERTIES
-  DEBUG_POSTFIX d
-  ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib
-  ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_BINARY_DIR}/lib
-  ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_BINARY_DIR}/lib
+set_target_properties(al PROPERTIES
+    DEBUG_POSTFIX d
+    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/libs
+    ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_LIST_DIR}/libs
+    ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_LIST_DIR}/libs
+    CXX_STANDARD 14
+    CXX_STANDARD_REQUIRED ON
 )
 
 #flags
@@ -113,10 +114,6 @@ if (AL_WINDOWS)
 else ()
   target_compile_options(al PRIVATE "-Wall")
 endif (AL_WINDOWS)
-
-# c++14
-set_target_properties(al PROPERTIES CXX_STANDARD 14)
-set_target_properties(al PROPERTIES CXX_STANDARD_REQUIRED ON)
 
 # definitions
 target_compile_definitions(al PUBLIC ${definitions})

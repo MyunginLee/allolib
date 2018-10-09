@@ -12,7 +12,7 @@ set(core_headers
   include/al/core/graphics/al_EasyFBO.hpp
   include/al/core/graphics/al_EasyVAO.hpp
   include/al/core/graphics/al_FBO.hpp
-  include/al/core/graphics/al_GLEW.hpp
+  #include/al/core/graphics/al_GLEW.hpp
   include/al/core/graphics/al_GLFW.hpp
   include/al/core/graphics/al_GPUObject.hpp
   include/al/core/graphics/al_Graphics.hpp
@@ -62,6 +62,8 @@ set(core_headers
 )
 
 set(core_sources
+    ${al_path}/src/al_GLAD.hpp
+    ${al_path}/src/glad/al_GLAD.cpp
   ${al_path}/src/core/app/al_AudioApp.cpp
   ${al_path}/src/core/app/al_FPS.cpp
   ${al_path}/src/core/app/al_WindowApp.cpp
@@ -70,7 +72,7 @@ set(core_sources
   ${al_path}/src/core/graphics/al_EasyFBO.cpp
   ${al_path}/src/core/graphics/al_EasyVAO.cpp
   ${al_path}/src/core/graphics/al_FBO.cpp
-  ${al_path}/src/core/graphics/al_GLEW.cpp
+  #${al_path}/src/core/graphics/al_GLEW.cpp
   ${al_path}/src/core/graphics/al_GLFW.cpp
   ${al_path}/src/core/graphics/al_GPUObject.cpp
   ${al_path}/src/core/graphics/al_Graphics.cpp

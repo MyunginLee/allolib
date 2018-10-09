@@ -10,8 +10,8 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
-#include "al/core/graphics/al_GLEW.hpp"
-
+//#include "al/core/graphics/al_GLEW.hpp"
+//#include "glad/glad.h"
 
 namespace al {
 

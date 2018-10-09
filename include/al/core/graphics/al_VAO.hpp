@@ -4,7 +4,8 @@
 /*  Keehong Youn, 2017, younkeehong@gmail.com
 */
 
-#include "al/core/graphics/al_GLEW.hpp"
+//#include "al/core/graphics/al_GLEW.hpp"
+#include "glad/glad.h"
 #include "al/core/graphics/al_BufferObject.hpp"
 
 namespace al {

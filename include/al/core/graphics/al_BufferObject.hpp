@@ -46,7 +46,8 @@
 
 #include <vector>
 #include "al/core/graphics/al_GPUObject.hpp"
-#include "al/core/graphics/al_GLEW.hpp"
+//#include "al/core/graphics/al_GLEW.hpp"
+#include "glad/glad.h"
 
 namespace al{
 

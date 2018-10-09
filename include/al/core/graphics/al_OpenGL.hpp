@@ -1,7 +1,8 @@
 #ifndef INCLUDE_AL_OPENGL_HPP
 #define INCLUDE_AL_OPENGL_HPP
 
-#include "al/core/graphics/al_GLEW.hpp"
+//#include "al/core/graphics/al_GLEW.hpp"
+#include "glad/glad.h"
 // #include "al/core/types/al_Color.hpp"
 
 namespace al {

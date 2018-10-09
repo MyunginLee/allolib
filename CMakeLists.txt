@@ -82,27 +82,17 @@ endif ()
 
 # first build dependencies
 
-set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-set(BUILD_UTILS OFF CACHE BOOL "" FORCE) # for glew
+#set(BUILD_UTILS OFF CACHE BOOL "" FORCE) # for glew
 
 set(ext_path ${al_path}/external)
 
 if (DEFINED CMAKE_CONFIGURATION_TYPES)
   add_subdirectory(${ext_path}/Gamma ${CMAKE_CURRENT_BINARY_DIR}/Gamma)
-  add_subdirectory(${ext_path}/glfw ${CMAKE_CURRENT_BINARY_DIR}/glfw)
-  add_subdirectory(${ext_path}/glew/build/cmake ${CMAKE_CURRENT_BINARY_DIR}/glew)
+  #add_subdirectory(${ext_path}/glew/build/cmake ${CMAKE_CURRENT_BINARY_DIR}/glew)
 else()
-  if (${CMAKE_BUILD_TYPE} MATCHES Debug)
+    # TODO: if statement below does nothing?
     add_subdirectory(${ext_path}/Gamma ${CMAKE_CURRENT_BINARY_DIR}/Gamma)
-    add_subdirectory(${ext_path}/glfw ${CMAKE_CURRENT_BINARY_DIR}/glfw)
-    add_subdirectory(${ext_path}/glew/build/cmake ${CMAKE_CURRENT_BINARY_DIR}/glew)
-  else()
-    add_subdirectory(${ext_path}/Gamma ${CMAKE_CURRENT_BINARY_DIR}/Gamma)
-    add_subdirectory(${ext_path}/glfw ${CMAKE_CURRENT_BINARY_DIR}/glfw)
-    add_subdirectory(${ext_path}/glew/build/cmake ${CMAKE_CURRENT_BINARY_DIR}/glew)
-  endif()
+    #add_subdirectory(${ext_path}/glew/build/cmake ${CMAKE_CURRENT_BINARY_DIR}/glew)
 endif ()
 
 # then allolib library
@@ -155,8 +145,18 @@ endforeach (dir)
 
 target_include_directories(al PUBLIC ${ADDITIONAL_INCLUDE_DIRS})
 
-# libs
-target_link_libraries(al PUBLIC ${libs_to_link} Gamma glfw glew_s)
+# cmake targets
+#target_link_libraries(al PUBLIC ${libs_to_link} Gamma glew_s)
+target_link_libraries(al PUBLIC ${libs_to_link} Gamma)
+
+# glfw3
+if (AL_LINUX)
+    target_link_libraries(al PUBLIC "")
+elseif (AL_WINDOWS)
+    target_link_libraries(al PUBLIC "")
+elseif (AL_MACOS)
+    target_link_libraries(al PUBLIC ${CMAKE_CURRENT_LIST_DIR}/libs/libglfw3.a "-framework Cocoa" "-framework OpenGL" "-framework IOKit" "-framework CoreVideo")
+endif ()
 
 # --- Testing -----------------------------------------
 if (ALLOLIB_BUILD_TESTS)

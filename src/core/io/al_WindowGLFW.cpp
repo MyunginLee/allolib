@@ -1,4 +1,6 @@
-#include "al/core/graphics/al_GLEW.hpp"
+//#include "al/core/graphics/al_GLEW.hpp"
+#include "glad/glad.h"
+#include "../../al_GLAD.hpp"
 #include "al/core/graphics/al_GLFW.hpp"
 #include "al/core/io/al_Window.hpp"
 
@@ -283,7 +285,8 @@ bool Window::implCreate(bool is_verbose) {
     cout << "window opened, size: (" << mDim.w << ", " << mDim.h << "), "
          << "position: (" << mDim.l << ", " << mDim.t << ")" << endl;
 
-  glew::init();
+  //glew::init();
+  alInitGLAD();
 
   if (is_verbose) {
     const GLubyte* renderer = glGetString(GL_RENDERER);

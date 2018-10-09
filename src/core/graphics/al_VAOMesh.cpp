@@ -1,4 +1,5 @@
 #include "al/core/graphics/al_VAOMesh.hpp"
+#include "../../al_GLAD.hpp"
 #include <iostream>
 
 using namespace al;
@@ -13,7 +14,8 @@ VAOMesh::VAOMesh(Primitive p): Mesh(p) {
 // when copying, make new vao
 VAOMesh::VAOMesh(VAOMesh const& other): Mesh(other) {
     vaoWrapper = std::make_shared<VAOWrapper>();
-    if (gl::loaded()) update();
+    //if (gl::loaded()) update();
+    if (alIsGLLoaded()) update();
     // std::cout << "copy ctor" << std::endl;
 }
 
@@ -27,7 +29,8 @@ VAOMesh::VAOMesh(VAOMesh&& other): Mesh(other) {
 VAOMesh& VAOMesh::operator = (VAOMesh const& other) {
     copy(other);
     vaoWrapper = std::make_shared<VAOWrapper>();
-    if (gl::loaded()) update();
+    //if (gl::loaded()) update();
+    if (alIsGLLoaded()) update();
     // std::cout << "copy assignment" << std::endl;
 	return *this;
 }

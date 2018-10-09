@@ -44,7 +44,8 @@
 
 */
 
-#include "al/core/graphics/al_GLEW.hpp"
+//#include "al/core/graphics/al_GLEW.hpp"
+#include "glad/glad.h"
 #include "al/core/graphics/al_GPUObject.hpp"
 #include "al/core/graphics/al_Texture.hpp"
 

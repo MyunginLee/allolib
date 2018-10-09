@@ -1,5 +1,4 @@
 #include "al/core/graphics/al_BufferObject.hpp"
-#include "al/core/graphics/al_GLEW.hpp"
 
 #include <iostream>
 

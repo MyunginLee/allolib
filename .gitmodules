@@ -10,9 +10,6 @@
 [submodule "external/imgui"]
 	path = external/imgui
 	url = https://github.com/ocornut/imgui.git
-[submodule "external/glfw"]
-	path = external/glfw
-	url = https://github.com/glfw/glfw.git
 [submodule "external/cpptoml"]
 	path = external/cpptoml
 	url = https://github.com/skystrife/cpptoml.git

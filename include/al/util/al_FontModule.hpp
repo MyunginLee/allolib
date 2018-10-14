@@ -1,7 +1,7 @@
 #include "al/core/graphics/al_Mesh.hpp"
 #include "al/core/graphics/al_Texture.hpp"
 #include "al/core/graphics/al_Graphics.hpp"
-#include "module/font/loadFont.hpp"
+#include "al/modules/al_LoadFont.hpp"
 #include <unordered_map>
 
 namespace al {

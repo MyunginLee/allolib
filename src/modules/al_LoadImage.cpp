@@ -4,11 +4,11 @@
 #define STB_IMAGE_STATIC
 #include "stb_image.h"
 
-#include "loadImage.hpp"
+#include "al/modules/al_LoadImage.hpp"
 
 using namespace std;
 
-img_module::ImageData img_module::loadImage(const char* filename) {
+al::ImageData al::loadImage(const char* filename) {
     ImageData image_data;
     int w, h, n;
     // n will contain number of channels originally in image file
@@ -23,6 +23,6 @@ img_module::ImageData img_module::loadImage(const char* filename) {
     return image_data;
 }
 
-img_module::ImageData img_module::loadImage(string &filename) {
-    return img_module::loadImage(filename.c_str());
+al::ImageData al::loadImage(string &filename) {
+    return al::loadImage(filename.c_str());
 }

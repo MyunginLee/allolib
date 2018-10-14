@@ -1,10 +1,10 @@
-#ifndef INCLUDE_LOAD_FONT_MODULE_HPP
-#define INCLUDE_LOAD_FONT_MODULE_HPP
+#ifndef INCLUDE_AL_LOAD_FONT_HPP
+#define INCLUDE_AL_LOAD_FONT_HPP
 
 #include <vector>
 #include <cstdint>
 
-namespace font_module {
+namespace al {
 
 // Wrapper for all the data needed for font rendering
 struct FontData {
@@ -36,7 +36,5 @@ FontData loadFont(const char* filename, float pixelHeight);
 CharData getCharData(const FontData& fontData, int charIndex);
 
 }
-
-namespace fontModule = font_module;
 
 #endif

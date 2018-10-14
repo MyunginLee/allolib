@@ -1,4 +1,4 @@
-#include "loadFont.hpp"
+#include "al/modules/al_LoadFont.hpp"
 #include <iostream>
 
 #define STB_TRUETYPE_IMPLEMENTATION  // force following include to generate implementation
@@ -11,7 +11,7 @@
 
 using namespace std;
 
-font_module::FontData font_module::loadFont(const char* filename, float pixelHeight) {
+al::FontData al::loadFont(const char* filename, float pixelHeight) {
     FontData fontData;
     FILE* fontFile = fopen(filename, "rb");
     if (fontFile) {
@@ -30,7 +30,7 @@ font_module::FontData font_module::loadFont(const char* filename, float pixelHei
         fontData.pixelHeight = pixelHeight;
     }
     else {
-        cout << "[font_module::loadFont] could not open font file: " << filename << endl;
+        cout << "[al::loadFont] could not open font file: " << filename << endl;
     }
     return fontData;
 }
@@ -38,7 +38,7 @@ font_module::FontData font_module::loadFont(const char* filename, float pixelHei
 // mod ver of stbtt_GetBakedQuad
 // assumes opengl use (no d3d)
 static void GetBakedChar(const stbtt_bakedchar* bakedchars, int pw, int ph,
-                         int char_index, font_module::CharData* c)
+                         int char_index, al::CharData* c)
 {
    float ipw = 1.0f / pw, iph = 1.0f / ph;
    const stbtt_bakedchar* b = bakedchars + char_index;
@@ -58,8 +58,8 @@ static void GetBakedChar(const stbtt_bakedchar* bakedchars, int pw, int ph,
    c->xAdvance = b->xadvance;
 }
 
-font_module::CharData font_module::getCharData(const FontData& fontData, int charIndex) {
-    font_module::CharData charData;
+al::CharData al::getCharData(const FontData& fontData, int charIndex) {
+    al::CharData charData;
     GetBakedChar(reinterpret_cast<const stbtt_bakedchar*>(fontData.charData.data()),
                  FONT_BITMAP_SIZE, FONT_BITMAP_SIZE,
                  charIndex - ASCII_FIRST_CHAR, &charData);

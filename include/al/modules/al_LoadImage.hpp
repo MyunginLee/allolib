@@ -1,5 +1,5 @@
-#ifndef INLCUDE_LOAD_IMAGE_HPP
-#define INLCUDE_LOAD_IMAGE_HPP
+#ifndef INLCUDE_AL_LOAD_IMAGE_HPP
+#define INLCUDE_AL_LOAD_IMAGE_HPP
 
 /*
     Description:
@@ -14,7 +14,7 @@
 #include <cstdint>
 #include <string>
 
-namespace img_module {
+namespace al {
 
 /*
     Always loads image as 8-bit 4 channels RGBA
@@ -36,6 +36,5 @@ ImageData loadImage(std::string &filename);
 
 }
 
-namespace imgModule = img_module;
-
 #endif
+

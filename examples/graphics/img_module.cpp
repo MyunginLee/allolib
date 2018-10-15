@@ -19,7 +19,7 @@
 
 #include "al/core.hpp"
 // TODO: figure out how to handle include dirs for modules
-#include "module/img/loadImage.hpp"
+#include "al/modules/al_LoadImage.hpp"
 
 #include <iostream>
 
@@ -30,7 +30,7 @@ struct MyApp : App {
     Texture tex;
 
     void onCreate() override {
-        auto imageData = imgModule::loadImage("data/hubble.jpg");
+        auto imageData = al::loadImage("data/hubble.jpg");
         if (imageData.data.size() == 0) {
             cout << "failed to load image" << endl;
         }

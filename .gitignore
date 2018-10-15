@@ -9,6 +9,10 @@
 **/build_ninja
 !external/glew/build
 
+lib/
+external/glfw/
+include/GLFW
+
 # only top level al folder
 /al/
 

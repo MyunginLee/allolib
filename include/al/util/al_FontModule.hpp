@@ -12,9 +12,9 @@ enum struct TEXT_ALIGN {
 
 struct FontModule {
     Texture fontTex;
-    font_module::FontData fontData;
+    al::FontData fontData;
     Mesh textMesh {Mesh::TRIANGLES};
-    std::unordered_map<int, font_module::CharData> cachedCharData;
+    std::unordered_map<int, al::CharData> cachedCharData;
     float alignFactorX = 0;
     float alignFactorY = 0;
 
@@ -28,7 +28,7 @@ struct FontModule {
     // TODO: separate rendering and mesh generation so the user can get mesh data without rendering
     void render(Graphics& g, const char* text, float height = 1);
 
-    // TODO: vertical align? might need to change font_module implementation
+    // TODO: vertical align? might need to change font module implementation
     //       to advanved interface of stbtt
     void align(TEXT_ALIGN horizontalAlign);
 };
@@ -36,7 +36,7 @@ struct FontModule {
 }
 
 inline bool al::FontModule::load(const char* filename, float size) {
-    fontData = font_module::loadFont(filename, size);
+    fontData = al::loadFont(filename, size);
     if (fontData.charData.size() == 0) {
         return false;
     }
@@ -62,10 +62,10 @@ inline void al::FontModule::render(Graphics& g, const char* text, float height) 
     float scale = height / fontData.pixelHeight;
     float xpos = 0;
 
-    auto cdata = [this](int c) -> const font_module::CharData& {
+    auto cdata = [this](int c) -> const al::CharData& {
         auto search = cachedCharData.find(c);
         if (search != cachedCharData.end()) return search->second;
-        else return (cachedCharData[c] = font_module::getCharData(fontData, c));
+        else return (cachedCharData[c] = al::getCharData(fontData, c));
     };
 
     while (*text) {

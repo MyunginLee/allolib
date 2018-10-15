@@ -2,14 +2,12 @@ cmake_minimum_required(VERSION 3.0)
 project(allolib)
 
 MACRO(MACRO_ENSURE_OUT_OF_SOURCE_BUILD MSG)
-     STRING(COMPARE EQUAL "${CMAKE_SOURCE_DIR}"
-     "${CMAKE_BINARY_DIR}" insource)
+     STRING(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" insource)
      GET_FILENAME_COMPONENT(PARENTDIR ${CMAKE_SOURCE_DIR} PATH)
-     STRING(COMPARE EQUAL "${CMAKE_SOURCE_DIR}"
-     "${PARENTDIR}" insourcesubdir)
-    IF(insource OR insourcesubdir)
-        MESSAGE(FATAL_ERROR "${MSG}")
-    ENDIF(insource OR insourcesubdir)
+     STRING(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${PARENTDIR}" insourcesubdir)
+     IF(insource OR insourcesubdir)
+         MESSAGE(FATAL_ERROR "${MSG}")
+     ENDIF(insource OR insourcesubdir)
 ENDMACRO(MACRO_ENSURE_OUT_OF_SOURCE_BUILD)
 
 MACRO_ENSURE_OUT_OF_SOURCE_BUILD(
@@ -32,7 +30,7 @@ elseif (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
   set(AL_WINDOWS 1)
   set(PLATFORM_DEFINITION -DAL_WINDOWS -D_USE_MATH_DEFINES)
   if (NOT ${CMAKE_GENERATOR_PLATFORM} STREQUAL "x64")
-  message("Warning! Not building for Win64 : ${CMAKE_GENERATOR_PLATFORM}")
+    message("Warning! Not building for Win64 : ${CMAKE_GENERATOR_PLATFORM}")
   endif(NOT ${CMAKE_GENERATOR_PLATFORM} STREQUAL "x64")
 else ()
   message(FATAL_ERROR "system platform not defined")
@@ -42,117 +40,52 @@ if(TRAVIS_BUILD)
   add_definitions(-DTRAVIS_BUILD)
 endif(TRAVIS_BUILD)
 
-# include(cmake/find_core_dependencies.cmake)
-# sets: CORE_INCLUDE_DIRS, CORE_LIBRARIES, CORE_LIBRARY_DIRS
+# finds local glfw that should have been installed by "scripts/glfw3.2.sh"
+find_package(glfw3 REQUIRED CONFIG # The CONFIG option may be used to skip Module mode explicitly and switch to Config mode
+             PATHS ${CMAKE_CURRENT_LIST_DIR}/lib/cmake/glfw3
+             NO_DEFAULT_PATH # If NO_DEFAULT_PATH is specified all NO_* options are enabled.
+)
+
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/external/Gamma ${CMAKE_CURRENT_BINARY_DIR}/Gamma)
+
 include(cmake/find_additional_dependencies.cmake)
-# sets: ADDITIONAL_INCLUDE_DIRS, ADDITIONAL_LIBRARIES, ADDITIONAL_HEADERS,
-#       ADDITIONAL_SOURCES, ADDITIONAL_DEFINITIONS
 include(cmake/external.cmake)
-# sets: EXTERNAL_INCLUDE_DIRS, EXTERNAL_SRC, EXTERNAL_DEFINITIONS
-#       EXTERNAL_LIBRARIES, EXTERNAL_DEBUG_LIBRARIES EXTERNAL_RELEASE_LIBRARIES
 include(cmake/al_files.cmake)
-# sets: al_headers, al_sources
 
-set(headers
-  ${al_headers} ${ADDITIONAL_HEADERS}
+add_library(al STATIC
+	${al_headers} ${ADDITIONAL_HEADERS}
+	${al_sources} ${EXTERNAL_SRC} ${ADDITIONAL_SOURCES}
 )
 
-set(sources
-  ${al_sources} ${module_sources} ${EXTERNAL_SRC} ${ADDITIONAL_SOURCES}
-)
-
-set(dirs_to_include
-  ${ADDITIONAL_INCLUDE_DIRS} ${EXTERNAL_INCLUDE_DIRS}
-)
-
-set(libs_to_link
-  ${OPENGL_gl_LIBRARY} ${ADDITIONAL_LIBRARIES} ${EXTERNAL_LIBRARIES}
-)
-
-set(definitions
-  ${PLATFORM_DEFINITION} ${EXTERNAL_DEFINITIONS} ${ADDITIONAL_DEFINITIONS}
-)
-
-# multi configuration generators
-if (DEFINED CMAKE_CONFIGURATION_TYPES)
-  set(CMAKE_CONFIGURATION_TYPES "Debug;Release")
-endif ()
-
-# --- NOW WE ARE READY TO SETUP THE LIBRARY TARGET ---------------------
-
-# first build dependencies
-
-#set(BUILD_UTILS OFF CACHE BOOL "" FORCE) # for glew
-
-set(ext_path ${al_path}/external)
-
-if (DEFINED CMAKE_CONFIGURATION_TYPES)
-  add_subdirectory(${ext_path}/Gamma ${CMAKE_CURRENT_BINARY_DIR}/Gamma)
-  #add_subdirectory(${ext_path}/glew/build/cmake ${CMAKE_CURRENT_BINARY_DIR}/glew)
-else()
-    # TODO: if statement below does nothing?
-    add_subdirectory(${ext_path}/Gamma ${CMAKE_CURRENT_BINARY_DIR}/Gamma)
-    #add_subdirectory(${ext_path}/glew/build/cmake ${CMAKE_CURRENT_BINARY_DIR}/glew)
-endif ()
-
-# then allolib library
-add_library(al STATIC ${headers} ${sources})
-
-#paths
 set_target_properties(al PROPERTIES
     DEBUG_POSTFIX d
-    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/libs
-    ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_LIST_DIR}/libs
-    ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_LIST_DIR}/libs
+    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/lib
+    ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_LIST_DIR}/lib
+    ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_LIST_DIR}/lib
     CXX_STANDARD 14
     CXX_STANDARD_REQUIRED ON
 )
 
-#flags
 if (AL_WINDOWS)
-  target_compile_options(al PRIVATE "")
+    target_compile_options(al PRIVATE "")
 else ()
-  target_compile_options(al PRIVATE "-Wall")
+    target_compile_options(al PRIVATE "-Wall")
 endif (AL_WINDOWS)
 
-# definitions
-target_compile_definitions(al PUBLIC ${definitions})
-
-# include dirs
-# target_include_directories(al PUBLIC
-#   ${al_path}/include
-#   ${dirs_to_include}
-# )
-
-target_include_directories(al PUBLIC
-  "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>"
-#  "$<INSTALL_INTERFACE:include>"
+target_compile_definitions(al PUBLIC
+    ${PLATFORM_DEFINITION} ${EXTERNAL_DEFINITIONS} ${ADDITIONAL_DEFINITIONS}
 )
 
-target_include_directories(al PUBLIC ${CMAKE_CURRENT_LIST_DIR}/modules)
+target_include_directories(al PUBLIC
+    ${CMAKE_CURRENT_LIST_DIR}/include ${ADDITIONAL_INCLUDE_DIRS} ${EXTERNAL_INCLUDE_DIRS}
+)
 
-# use external include dirs when building,
-# when installed, external headers will be in `include`
-# so only `include` needs to be specified as include directory
-foreach (dir ${EXTERNAL_INCLUDE_DIRS})
-  target_include_directories(al PUBLIC
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/${dir}>"
-  )
-endforeach (dir)
+target_link_libraries(al PUBLIC
+    ${OPENGL_gl_LIBRARY} glfw Gamma ${ADDITIONAL_LIBRARIES} ${EXTERNAL_LIBRARIES}
+)
 
-target_include_directories(al PUBLIC ${ADDITIONAL_INCLUDE_DIRS})
-
-# cmake targets
-#target_link_libraries(al PUBLIC ${libs_to_link} Gamma glew_s)
-target_link_libraries(al PUBLIC ${libs_to_link} Gamma)
-
-# glfw3
-if (AL_LINUX)
-    target_link_libraries(al PUBLIC "")
-elseif (AL_WINDOWS)
-    target_link_libraries(al PUBLIC "")
-elseif (AL_MACOS)
-    target_link_libraries(al PUBLIC ${CMAKE_CURRENT_LIST_DIR}/libs/libglfw3.a "-framework Cocoa" "-framework OpenGL" "-framework IOKit" "-framework CoreVideo")
+if (NOT AL_WINDOWS)
+ target_link_libraries(al PUBLIC dl)
 endif ()
 
 # --- Testing -----------------------------------------
@@ -160,32 +93,6 @@ if (ALLOLIB_BUILD_TESTS)
   add_subdirectory(test)
 endif()
 
-# ----- Examples -------------------------------------
-
+# ---- Examples ---------------------------------------
 include("cmake/example_targets.cmake")
 
-# ----- INSTALL ----------------------------------------------------------------
-#
-# [!] dependent targets (glew_s, glfw, and Gamma) shoud have install target also
-
-set(CMAKE_INSTALL_PREFIX ${al_path}/al)
-
-install(TARGETS al
-  EXPORT al-targets
-  RUNTIME DESTINATION bin
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-)
-
-# For some reason this line causes an error when including depencies that are inside the source
-# tree on windows.... What does it do anyway...?
-#install(EXPORT al-targets DESTINATION lib/cmake/al)
-install(DIRECTORY ${al_path}/include/al DESTINATION include)
-
-install(DIRECTORY external/oscpack/ip DESTINATION include)
-install(DIRECTORY external/oscpack/osc DESTINATION include)
-install(FILES external/imgui/imgui.h DESTINATION include)
-install(FILES external/imgui/imconfig.h DESTINATION include)
-install(FILES external/rtaudio/RtAudio.h DESTINATION include)
-install(FILES external/rtmidi/rtmidi_c.h external/rtmidi/RtMidi.h
-        DESTINATION include)

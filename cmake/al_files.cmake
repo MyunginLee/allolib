@@ -160,10 +160,6 @@ set(al_headers
   ${util_headers}
 )
 
-set(al_sources
-  ${core_sources}
-  ${util_sources}
-)
 
 set(module_sources
     include/al/modules/al_LoadFont.hpp
@@ -172,3 +168,8 @@ set(module_sources
     src/modules/al_LoadImage.cpp
 )
 
+set(al_sources
+  ${core_sources}
+  ${util_sources}
+  ${module_sources}
+)

@@ -11,21 +11,18 @@ cd glfw
 git checkout 999f355
 cd ../..
 
-# build glfw
+# build glfw and install at local site
 mkdir -p build
 cd build
 mkdir -p glfw
 cd glfw
-cmake -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_TESTS=OFF -DGLFW_BUILD_DOCS=OFF ../../external/glfw
-cmake --build .
+cmake -DCMAKE_INSTALL_PREFIX=../.. -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_TESTS=OFF -DGLFW_BUILD_DOCS=OFF ../../external/glfw
+cmake --build . --target install
 cd ../..
 
-# copy headers
-mkdir -p include
-rm -rf include/GLFW
-cp -R external/glfw/include/GLFW include
-
-# copy lib
-mkdir -p libs
-cp build/glfw/src/libglfw3.a libs
+# copy headers and lib (if not using install target?)
+#mkdir -p include
+#cp -R external/glfw/include/GLFW include
+#mkdir -p lib
+#cp build/glfw/src/libglfw3.a lib
 

@@ -1,6 +1,6 @@
 option(USE_GLV "" OFF)
+set(AL_COMPOSITE_BUILD OFF)
 
-# Main Library
 set(core_headers
   include/al/core/app/al_App.hpp
   include/al/core/app/al_AudioApp.hpp
@@ -61,6 +61,82 @@ set(core_headers
   include/al/core/types/al_Color.hpp
 )
 
+set(util_headers
+  include/al/util/al_Array.h
+  include/al/util/al_Array.hpp
+  include/al/util/imgui/al_Imgui.hpp
+  include/al/util/imgui/imgui_impl_glfw_gl3.h
+  include/al/util/ui/al_Composition.hpp
+  include/al/util/ui/al_Parameter.hpp
+  include/al/util/ui/al_ParameterBundle.hpp
+  include/al/util/ui/al_ParameterGUI.hpp
+  include/al/util/ui/al_ParameterServer.hpp
+  include/al/util/ui/al_ParameterMIDI.hpp
+  include/al/util/ui/al_Preset.hpp
+  include/al/util/ui/al_HtmlInterfaceServer.hpp
+  include/al/util/ui/al_PresetMapper.hpp
+  include/al/util/ui/al_PresetMIDI.hpp
+  include/al/util/ui/al_PresetSequencer.hpp
+  include/al/util/ui/al_SequenceRecorder.hpp
+  include/al/util/ui/al_ControlGUI.hpp
+  include/al/util/scene/al_SynthSequencer.hpp
+  include/al/util/scene/al_SynthRecorder.hpp
+  include/al/util/scene/al_DynamicScene.hpp
+  include/al/util/scene/al_DistributedScene.hpp
+  include/al/util/scene/al_PolySynth.hpp
+  include/al/util/scene/al_SequencerMIDI.hpp
+  include/al/util/al_Toml.hpp
+  include/al/util/sound/al_OutputMaster.hpp
+)
+
+if(AL_COMPOSITE_BUILD)
+  message("Doing composite build")
+  set(core_sources
+    ${al_path}/src/core/graphics/graphics_all.cpp
+    ${al_path}/src/core/app/app_all.cpp
+
+    ${al_path}/src/core/io/al_AudioIO.cpp
+    ${al_path}/src/core/io/al_AudioIOData.cpp
+    ${al_path}/src/core/io/al_ControlNav.cpp
+    ${al_path}/src/core/io/al_CSVReader.cpp
+    ${al_path}/src/core/io/al_File.cpp
+    ${al_path}/src/core/io/al_MIDI.cpp
+    ${al_path}/src/core/io/al_Window.cpp
+    ${al_path}/src/core/io/al_WindowGLFW.cpp
+    ${al_path}/src/core/math/al_StdRandom.cpp
+    ${al_path}/src/core/protocol/al_OSC.cpp
+    ${al_path}/src/core/sound/al_Ambisonics.cpp
+    ${al_path}/src/core/sound/al_AudioScene.cpp
+    ${al_path}/src/core/sound/al_Biquad.cpp
+    ${al_path}/src/core/sound/al_Dbap.cpp
+    ${al_path}/src/core/sound/al_Vbap.cpp
+    ${al_path}/src/core/spatial/al_HashSpace.cpp
+    ${al_path}/src/core/spatial/al_Pose.cpp
+    ${al_path}/src/core/system/al_PeriodicThread.cpp
+    ${al_path}/src/core/system/al_Printing.cpp
+    ${al_path}/src/core/system/al_ThreadNative.cpp
+    ${al_path}/src/core/system/al_Time.cpp
+    ${al_path}/src/core/types/al_Color.cpp
+    ${al_path}/src/core/core.cpp
+  )
+
+set(util_sources
+  ${al_path}/src/util/ui/ui_all.cpp
+
+  ${al_path}/src/util/al_Array_C.c
+  ${al_path}/src/util/al_Array.cpp
+  ${al_path}/src/util/imgui/al_Imgui.cpp
+  ${al_path}/src/util/imgui/imgui_impl_glfw_gl3.cpp
+  ${al_path}/src/util/scene/al_SynthSequencer.cpp
+  ${al_path}/src/util/scene/al_SynthRecorder.cpp
+  ${al_path}/src/util/scene/al_DynamicScene.cpp
+  ${al_path}/src/util/scene/al_PolySynth.cpp
+  ${al_path}/src/util/al_Toml.cpp
+  ${al_path}/src/util/sound/al_OutputMaster.cpp
+)
+
+else()
+# Main Library
 set(core_sources
   ${al_path}/src/core/app/al_AudioApp.cpp
   ${al_path}/src/core/app/al_FPS.cpp
@@ -110,34 +186,6 @@ set(core_sources
   ${al_path}/src/core/types/al_Color.cpp
 )
 
-set(util_headers
-  include/al/util/al_Array.h
-  include/al/util/al_Array.hpp
-  include/al/util/imgui/al_Imgui.hpp
-  include/al/util/imgui/imgui_impl_glfw_gl3.h
-  include/al/util/ui/al_Composition.hpp
-  include/al/util/ui/al_Parameter.hpp
-  include/al/util/ui/al_ParameterBundle.hpp
-  include/al/util/ui/al_ParameterGUI.hpp
-  include/al/util/ui/al_ParameterServer.hpp
-  include/al/util/ui/al_ParameterMIDI.hpp
-  include/al/util/ui/al_Preset.hpp
-  include/al/util/ui/al_HtmlInterfaceServer.hpp
-  include/al/util/ui/al_PresetMapper.hpp
-  include/al/util/ui/al_PresetMIDI.hpp
-  include/al/util/ui/al_PresetSequencer.hpp
-  include/al/util/ui/al_SequenceRecorder.hpp
-  include/al/util/ui/al_ControlGUI.hpp
-  include/al/util/scene/al_SynthSequencer.hpp
-  include/al/util/scene/al_SynthRecorder.hpp
-  include/al/util/scene/al_DynamicScene.hpp
-  include/al/util/scene/al_DistributedScene.hpp
-  include/al/util/scene/al_PolySynth.hpp
-  include/al/util/scene/al_SequencerMIDI.hpp
-  include/al/util/al_Toml.hpp
-  include/al/util/sound/al_OutputMaster.hpp
-)
-
 set(util_sources
   ${al_path}/src/util/al_Array_C.c
   ${al_path}/src/util/al_Array.cpp
@@ -162,6 +210,8 @@ set(util_sources
   ${al_path}/src/util/al_Toml.cpp
   ${al_path}/src/util/sound/al_OutputMaster.cpp
 )
+
+endif(AL_COMPOSITE_BUILD)
 
 set(al_headers
   ${core_headers}
@@ -225,3 +275,4 @@ if (USE_GLV)
   list(APPEND al_headers ${glv_headers})
   list(APPEND al_sources ${glv_sources})
 endif()
+

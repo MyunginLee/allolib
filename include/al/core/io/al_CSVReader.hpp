@@ -101,6 +101,12 @@ int main(int argc, char *argv[]) {
 }
     \endcode
  */
+
+#ifdef AL_WINDOWS
+#undef IGNORE
+#endif
+
+
 class CSVReader {
 public:
   typedef enum {

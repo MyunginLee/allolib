@@ -1,5 +1,5 @@
 option(USE_GLV "" OFF)
-set(AL_COMPOSITE_BUILD OFF)
+set(AL_COMPOSITE_BUILD ON)
 
 set(core_headers
   include/al/core/app/al_App.hpp
@@ -94,15 +94,8 @@ if(AL_COMPOSITE_BUILD)
   set(core_sources
     ${al_path}/src/core/graphics/graphics_all.cpp
     ${al_path}/src/core/app/app_all.cpp
+    ${al_path}/src/core/io/io_all.cpp
 
-    ${al_path}/src/core/io/al_AudioIO.cpp
-    ${al_path}/src/core/io/al_AudioIOData.cpp
-    ${al_path}/src/core/io/al_ControlNav.cpp
-    ${al_path}/src/core/io/al_CSVReader.cpp
-    ${al_path}/src/core/io/al_File.cpp
-    ${al_path}/src/core/io/al_MIDI.cpp
-    ${al_path}/src/core/io/al_Window.cpp
-    ${al_path}/src/core/io/al_WindowGLFW.cpp
     ${al_path}/src/core/math/al_StdRandom.cpp
     ${al_path}/src/core/protocol/al_OSC.cpp
     ${al_path}/src/core/sound/al_Ambisonics.cpp
@@ -117,7 +110,6 @@ if(AL_COMPOSITE_BUILD)
     ${al_path}/src/core/system/al_ThreadNative.cpp
     ${al_path}/src/core/system/al_Time.cpp
     ${al_path}/src/core/types/al_Color.cpp
-    ${al_path}/src/core/core.cpp
   )
 
 set(util_sources

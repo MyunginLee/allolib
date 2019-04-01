@@ -52,6 +52,10 @@
 #include <iostream>
 #include <memory>
 
+#ifdef AL_WINDOWS
+#undef DELETE
+#endif
+
 namespace al{
 
 class Window;

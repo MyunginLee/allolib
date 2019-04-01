@@ -484,17 +484,11 @@ ParameterGUI::PresetHandlerState &ParameterGUI::drawPresetHandler(PresetHandler 
 
         int selection = presetHandler->getCurrentPresetIndex();
         std::string currentPresetName = presetHandler->getCurrentPresetName();
-
-        char buf1[64];
-        if (state.enteredText.size() == 0) {
-            strncpy(buf1, currentPresetName.c_str(), 63);
-        } else {
-            strncpy(buf1, state.enteredText.c_str(), 63);
-        }
-        if (ImGui::InputText("preset", buf1, 64)) {
-            state.enteredText = buf1;
-        }
+        ImGui::Text("%s", currentPresetName.c_str());
         int counter = state.presetHandlerBank * (presetColumns * presetRows) ;
+        if (state.storeButtonState) {
+          ImGui::PushStyleColor(ImGuiCol_Text, 0xff0000ff);
+        }
         for (int row = 0; row < presetRows; row++) {
             for (int column = 0; column < presetColumns; column++) {
                 std::string name = std::to_string(counter);
@@ -514,6 +508,7 @@ ParameterGUI::PresetHandlerState &ParameterGUI::drawPresetHandler(PresetHandler 
                         presetHandler->storePreset(counter, saveName.c_str());
                         selection = counter;
                         state.storeButtonState = false;
+                        ImGui::PopStyleColor();
                         state.enteredText.clear();
                     } else {
                         if (presetHandler->recallPreset(counter) != "") { // Preset is available
@@ -532,8 +527,9 @@ ParameterGUI::PresetHandlerState &ParameterGUI::drawPresetHandler(PresetHandler 
                 ImGui::PopID();
             }
         }
-        ImGui::Checkbox("Store", &state.storeButtonState);
-        ImGui::SameLine();
+        if (state.storeButtonState) {
+          ImGui::PopStyleColor();
+        }
         if (ImGui::Button("<-")) {
             state.presetHandlerBank -= 1;
             if (state.presetHandlerBank < 0) {
@@ -547,60 +543,90 @@ ParameterGUI::PresetHandlerState &ParameterGUI::drawPresetHandler(PresetHandler 
                 state.presetHandlerBank = 0;
             }
         }
+        ImGui::SameLine(0.0f, 40.0f);
 
-        vector<string> mapList = presetHandler->availablePresetMaps();
-        ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.15f);
-        if (ImGui::BeginCombo("Preset Map", state.currentBank.data())) {
-            stateMap[presetHandler].mapList = presetHandler->availablePresetMaps();
-            for (auto mapName : stateMap[presetHandler].mapList ) {
-                bool isSelected = (state.currentBank == mapName);
-                if (ImGui::Selectable(mapName.data(), isSelected)){
-                    state.currentBank = mapName;
-                    presetHandler->setCurrentPresetMap(mapName);
-                }
-                if (isSelected) {
-                    ImGui::SetItemDefaultFocus();
-                }
-            }
-            ImGui::EndCombo();
+        if (state.storeButtonState) {
+          ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0, 0.0, 0.0, 1.0));
         }
-        ImGui::SameLine();
-        if (!state.newMap) {
-            if (ImGui::Button("+")) {
-                state.newMap = true;
-            }
+        std::string storeText = state.storeButtonState ? "Cancel" : "Store";
+        bool storeButtonPressed = ImGui::Button(storeText.c_str(), ImVec2(100, 0));
+        if (state.storeButtonState) {
+          ImGui::PopStyleColor();
+        }
+        if (storeButtonPressed) {
+          state.storeButtonState = !state.storeButtonState;
+          if (state.storeButtonState) {
+            state.enteredText = currentPresetName;
+          }
+        }
+        if (state.storeButtonState) {
+          char buf1[64];
+          strncpy(buf1, state.enteredText.c_str(), 63);
+          ImGui::Text("Store preset as:");
+          ImGui::SameLine();
+          if (ImGui::InputText("preset", buf1, 64)) {
+              state.enteredText = buf1;
+          }
+          ImGui::Text("Click on a preset number to store.");
         } else {
-            char buf2[64];
-            strncpy(buf2, state.newMapText.c_str(), 63);
-            ImGui::Text("New map:");
+          vector<string> mapList = presetHandler->availablePresetMaps();
+//          ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.65f);
+          if (ImGui::BeginCombo("Preset Map", state.currentBank.data())) {
+              stateMap[presetHandler].mapList = presetHandler->availablePresetMaps();
+              for (auto mapName : stateMap[presetHandler].mapList ) {
+                  bool isSelected = (state.currentBank == mapName);
+                  if (ImGui::Selectable(mapName.data(), isSelected)){
+                      state.currentBank = mapName;
+                      presetHandler->setCurrentPresetMap(mapName);
+                  }
+                  if (isSelected) {
+                      ImGui::SetItemDefaultFocus();
+                  }
+              }
+              ImGui::EndCombo();
+          }
+          if (!state.newMap) {
             ImGui::SameLine();
-            if (ImGui::InputText("", buf2, 64)) {
-                state.newMapText = buf2;
+            if (ImGui::Button("+")) {
+              state.newMap = true;
             }
-            ImGui::SameLine();
-            if (ImGui::Button("Create")) {
-                auto path = File::conformDirectory(presetHandler->getCurrentPath()) + state.newMapText + ".presetMap";
-                // Create an empty file
-                ofstream file;
-                file.open(path, ios::out);
-                file.close();
-                state.newMap = false;
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("Cancel")) {
-                state.newMapText = "";
-                state.newMap = false;
-            }
+          } else {
+              char buf2[64];
+              strncpy(buf2, state.newMapText.c_str(), 63);
+              ImGui::Text("New map:");
+//              ImGui::SameLine();
+              ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.5f);
+              if (ImGui::InputText("", buf2, 64)) {
+                  state.newMapText = buf2;
+              }
+              ImGui::PopItemWidth();
+              ImGui::SameLine();
+              if (ImGui::Button("Create")) {
+                  auto path = File::conformDirectory(presetHandler->getCurrentPath()) + state.newMapText + ".presetMap";
+                  // Create an empty file
+                  ofstream file;
+                  file.open(path, ios::out);
+                  file.close();
+                  state.newMap = false;
+              }
+              ImGui::SameLine();
+              if (ImGui::Button("Cancel")) {
+                  state.newMapText = "";
+                  state.newMap = false;
+              }
+          }
+          // TODO options to create new bank
+  //        ImGui::SameLine();
+//          ImGui::PopItemWidth();
+          ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.2f);
+          float morphTime = presetHandler->getMorphTime();
+          if (ImGui::InputFloat("morph time", &morphTime, 0.0f, 20.0f)) {
+              presetHandler->setMorphTime(morphTime);
+          }
+          ImGui::PopItemWidth();
+
         }
-        // TODO options to create new bank
-//        ImGui::SameLine();
-        ImGui::PopItemWidth();
-        ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.2f);
-        float morphTime = presetHandler->getMorphTime();
-        if (ImGui::InputFloat("morph time", &morphTime, 0.0f, 20.0f)) {
-            presetHandler->setMorphTime(morphTime);
-        }
-        ImGui::PopItemWidth();
+
 //            ImGui::Text("%s", currentPresetName.c_str());
 
     }
@@ -618,11 +644,11 @@ void ParameterGUI::drawPresetSequencer(PresetSequencer *presetSequencer, int &cu
         stateMap[presetSequencer] = SequencerState{0.0, 0.0};
         float *currentTime = &(stateMap[presetSequencer].currentTime);
         presetSequencer->registerTimeChangeCallback( [currentTime](float currTime)
-            {*currentTime = currTime;}, 0.1);
-        presetSequencer->registerBeginCallback([&](PresetSequencer *sender, void *userData) {stateMap[presetSequencer].totalDuration = sender->getSequenceTotalDuration(sender->currentSequence());});
+            {*currentTime = currTime;}, 0.1f);
+        presetSequencer->registerBeginCallback([&](PresetSequencer *sender, void */*userData*/) {stateMap[presetSequencer].totalDuration = sender->getSequenceTotalDuration(sender->currentSequence());});
         vector<string> seqList = presetSequencer->getSequenceList();
-        std::cout << seqList[currentPresetSequencerItem] <<std::endl;
         if (currentPresetSequencerItem >= 0 && currentPresetSequencerItem < (int) seqList.size()) {
+            std::cout << seqList[currentPresetSequencerItem] << std::endl;
             presetSequencer->loadSequence(seqList[currentPresetSequencerItem]);
             stateMap[presetSequencer].totalDuration = presetSequencer->getSequenceTotalDuration(seqList[currentPresetSequencerItem]);
         }
@@ -672,66 +698,106 @@ void ParameterGUI::drawPresetSequencer(PresetSequencer *presetSequencer, int &cu
                 presetSequencer->stopSequence();
                 presetSequencer->rewind();
             }
-        }
-        float time = state.currentTime;
-//        std::cout << time << std::endl;
-        if (ImGui::SliderFloat("Position", &time, 0.0f, state.totalDuration)) {
-//            std::cout << "Requested time:" << time << std::endl;
-            presetSequencer->setTime(time);
+            float time = state.currentTime;
+    //        std::cout << time << std::endl;
+            if (ImGui::SliderFloat("Position", &time, 0.0f, state.totalDuration)) {
+    //            std::cout << "Requested time:" << time << std::endl;
+                presetSequencer->setTime(time);
+            }
+        } else {
+          ImGui::Text("No sequences found.");
         }
     }
     ImGui::PopID();
 }
 
-void ParameterGUI::drawSequenceRecorder(SequenceRecorder *sequenceRecorder,
-                                        bool &overwriteButtonValue)
+void ParameterGUI::drawSequenceRecorder(SequenceRecorder *sequenceRecorder)
 {
-    if (ImGui::CollapsingHeader("Sequence Recorder##__SequenceRecorder", ImGuiTreeNodeFlags_CollapsingHeader | ImGuiTreeNodeFlags_DefaultOpen)) {
+    struct SequenceRecorderState {
+        bool overwriteButtonValue {false};
+    };
+    static std::map<SequenceRecorder *, SequenceRecorderState> stateMap;
+    if(stateMap.find(sequenceRecorder) == stateMap.end()) {
+        stateMap[sequenceRecorder] = SequenceRecorderState{0};
+    }
+    SequenceRecorderState &state = stateMap[sequenceRecorder];
+    if (ImGui::CollapsingHeader("Preset Sequence Recorder##__SequenceRecorder", ImGuiTreeNodeFlags_CollapsingHeader | ImGuiTreeNodeFlags_DefaultOpen)) {
         static char buf_seq_recorder[64] = "test"; ImGui::InputText("Record Name##__SequenceRecorder", buf_seq_recorder, 64);
         static bool button_seq_recorder_value = false;
-        if (ImGui::Checkbox("Record##__SequenceRecorder", &button_seq_recorder_value)) {
+        if (button_seq_recorder_value) {
+          ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0, 0.0, 0.0, 1.0));
+        }
+        std::string buttonText = button_seq_recorder_value ? "Stop##__SequenceRecorder" : "Record##__SequenceRecorder";
+        bool recordButtonClicked = ImGui::Button(buttonText.c_str());
+        if (button_seq_recorder_value) {
+          ImGui::PopStyleColor();
+        }
+        if (recordButtonClicked) {
+            button_seq_recorder_value = !button_seq_recorder_value;
             if (button_seq_recorder_value) {
-                sequenceRecorder->startRecord(buf_seq_recorder, overwriteButtonValue);
+                sequenceRecorder->startRecord(buf_seq_recorder, state.overwriteButtonValue);
             } else {
                 sequenceRecorder->stopRecord();
             }
         }
         ImGui::SameLine();
-        ImGui::Checkbox("Overwrite##__SequenceRecorder", &overwriteButtonValue);
+        ImGui::Checkbox("Overwrite##__SequenceRecorder", &state.overwriteButtonValue);
     }
 }
 
 void ParameterGUI::drawSynthSequencer(SynthSequencer *synthSequencer) {
     struct SynthSequencerState {
         int currentItem;
+        float totalDuration {0.0f};
+        float currentTime {0.0f};
     };
     static std::map<SynthSequencer *, SynthSequencerState> stateMap;
     if(stateMap.find(synthSequencer) == stateMap.end()) {
         stateMap[synthSequencer] = SynthSequencerState{0};
+        float *currentTime = &(stateMap[synthSequencer].currentTime);
+        synthSequencer->registerTimeChangeCallback( [currentTime](float currTime)
+            {*currentTime = currTime;}, 0.1f);
     }
     SynthSequencerState &state = stateMap[synthSequencer];
 
-    if (ImGui::CollapsingHeader("Event Sequencer##EventSequencer", ImGuiTreeNodeFlags_CollapsingHeader | ImGuiTreeNodeFlags_DefaultOpen)) {
+    std::string id = std::to_string((unsigned long) synthSequencer);
+    std::string suffix = "##EventSequencer" + id;
+    ImGui::PushID(suffix.c_str());
+    std::string headerLabel = "Event Sequencer";
+    if (ImGui::CollapsingHeader(headerLabel.c_str(), ImGuiTreeNodeFlags_CollapsingHeader | ImGuiTreeNodeFlags_DefaultOpen)) {
+      // TODO we should only refresh occasionally or perhaps reactively.
         std::vector<std::string> seqList = synthSequencer->getSequenceList();
         if (seqList.size() > 0) {
             if (seqList.size() > 64) {
                 seqList.resize(64);
                 std::cout << "Cropping sequence list to 64 items for display" <<std::endl;
             }
-            ImGui::Combo("Sequences##SynthSequencer", &state.currentItem, ParameterGUI::vector_getter,
-                         static_cast<void*>(&seqList), seqList.size());
-            if (ImGui::Button("Play##EventSequencer")) {
+            if (ImGui::Combo("Sequences", &state.currentItem, ParameterGUI::vector_getter,
+                             static_cast<void*>(&seqList), seqList.size())) {
+              state.totalDuration = synthSequencer->getSequenceDuration(seqList[state.currentItem]);
+            }
+            if (ImGui::Button("Play")) {
                 synthSequencer->stopSequence();
                 synthSequencer->synth().allNotesOff();
+                state.totalDuration = synthSequencer->getSequenceDuration(seqList[state.currentItem]);
                 synthSequencer->playSequence(seqList[state.currentItem]);
+
             }
             ImGui::SameLine();
-            if (ImGui::Button("Stop##EventSequencer")) {
+            if (ImGui::Button("Stop")) {
                 synthSequencer->stopSequence();
                 synthSequencer->synth().allNotesOff();
             }
+//            static float time = state.currentTime;
+            if (ImGui::SliderFloat("Position", &state.currentTime, 0.0f, state.totalDuration)) {
+                std::cout << "Requested time:" << state.currentTime << std::endl;
+                synthSequencer->setTime(state.currentTime);
+            }
+        } else {
+          ImGui::Text("No sequences found.");
         }
     }
+    ImGui::PopID();
 }
 
 void ParameterGUI::drawSynthRecorder(SynthRecorder *synthRecorder) {
@@ -747,7 +813,16 @@ void ParameterGUI::drawSynthRecorder(SynthRecorder *synthRecorder) {
 
     if (ImGui::CollapsingHeader("Event Recorder##__EventRecorder", ImGuiTreeNodeFlags_CollapsingHeader | ImGuiTreeNodeFlags_DefaultOpen)) {
         static char buf1[64] = "test"; ImGui::InputText("Record Name##__EventRecorder", buf1, 64);
-        if (ImGui::Checkbox("Record##__EventRecorder", &state.recordButton)) {
+        if (state.recordButton) {
+          ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0, 0.0, 0.0, 1.0));
+        }
+        std::string buttonText = state.recordButton ? "Stop##__EventRecorder" : "Record##__EventRecorder";
+        bool recordButtonClicked = ImGui::Button(buttonText.c_str());
+        if (state.recordButton) {
+          ImGui::PopStyleColor();
+        }
+        if (recordButtonClicked) {
+            state.recordButton = !state.recordButton;
             if (state.recordButton) {
                 synthRecorder->startRecord(buf1, state.overrideButton);
             } else {
@@ -755,7 +830,7 @@ void ParameterGUI::drawSynthRecorder(SynthRecorder *synthRecorder) {
             }
         }
         ImGui::SameLine();
-        ImGui::Checkbox("Overwrite", &state.overrideButton);
+        ImGui::Checkbox("Overwrite##__EventRecorder", &state.overrideButton);
     }
 }
 

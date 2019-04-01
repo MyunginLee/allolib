@@ -40,6 +40,8 @@
 	Andrés Cabrera mantaraya36@gmail.com
 */
 
+#include <climits>
+
 #include "al/core/io/al_ControlNav.hpp"
 #include "al/util/ui/al_Parameter.hpp"
 #include "al/util/ui/al_Preset.hpp"
@@ -82,6 +84,8 @@ public:
     static void drawVec4(ParameterVec4 *param, std::string suffix = "");
     static void drawTrigger(Trigger *param, std::string suffix = "");
 
+    static void drawSynthController(PolySynth *param, std::string suffix = "");
+
     // Display for al types
     static void drawNav(Nav *mNav, std::string suffix = "");
     static void drawDynamicScene(DynamicScene *scene, std::string suffix = "");
@@ -111,12 +115,12 @@ public:
         bool newMap = false;
         std::string enteredText;
         std::string newMapText;
-        bool storeButtonState;
+        bool storeButtonState {false};
     };
 
     static PresetHandlerState &drawPresetHandler(PresetHandler *presetHandler, int presetColumns, int presetRows);
     static void drawPresetSequencer(PresetSequencer *presetSequencer, int &currentPresetSequencerItem);
-    static void drawSequenceRecorder(SequenceRecorder *sequenceRecorder, bool &overwriteButtonValue);
+    static void drawSequenceRecorder(SequenceRecorder *sequenceRecorder);
     static void drawSynthSequencer(SynthSequencer *synthSequencer);
     static void drawSynthRecorder(SynthRecorder *synthRecorder);
 
@@ -128,6 +132,7 @@ public:
     static void drawBundleManager(BundleGUIManager *manager);
 
     static bool usingInput() {return imgui_is_using_input();}
+    static bool usingKeyboard() {return imgui_is_using_keyboard();}
 
     // Convenience function for use in ImGui::Combo
     static auto vector_getter(void* vec, int idx, const char** out_text)
@@ -205,6 +210,212 @@ private:
     std::string mName;
     int mCurrentBundle {0};
     bool mBundleGlobal {false};
+};
+
+template<class VoiceType>
+class SynthGUIManager {
+public:
+    SynthGUIManager(std::string name = "") {
+        mControlVoice.init();
+        for (auto *param: mControlVoice.triggerParameters()) {
+            mPresetHandler << *param;
+        }
+//        mSynth = &synth;
+
+        mName = name;
+        if (mName == "") {
+          mName = demangle(typeid (mControlVoice).name());
+        }
+        mPresetHandler.setRootPath(mName + "-data");
+        mPresetSequencer << mPresetHandler;
+        mPresetSequenceRecorder << mPresetHandler;
+
+        mSequencer.setDirectory(mName+ "-data");
+        mRecorder.setDirectory(mName+ "-data");
+//        mSequencer << *mSynth;
+        mRecorder << mSequencer.synth();
+
+//        template<class VoiceType>
+        mSequencer.synth().template registerSynthClass<VoiceType>(demangle(typeid (VoiceType).name()));
+        mSequencer.synth().template allocatePolyphony<VoiceType>(16);
+;    }
+
+    void drawSynthControlPanel() {
+        ParameterGUI::beginPanel(demangle(typeid (mControlVoice).name()).c_str());
+        drawFields();
+        drawPresets();
+        ImGui::Separator();
+        static int currentTab = 1;
+        ImGui::Columns(2, nullptr, true);
+        if (ImGui::Selectable("Polyphonic", currentTab == 1)) {
+            currentTab = 1;
+            triggerOff();
+        }
+        ImGui::NextColumn();
+        if (ImGui::Selectable("Static", currentTab == 2)) {
+            currentTab = 2;
+            synthSequencer().stopSequence();
+            synth().allNotesOff();
+//            while (synth().getActiveVoices()) {} // Spin until all voices have been removed
+//            triggerOn();
+        }
+
+        ImGui::Columns(1);
+        if (currentTab == 1) {
+          drawAllNotesOffButton();
+          drawSynthSequencer();
+          drawSynthRecorder();
+        } else {
+          drawTriggerButton();
+          drawPresetSequencer();
+          drawPresetSequencerRecorder();
+        }
+        ParameterGUI::endPanel();
+    }
+
+    void render(AudioIOData &io) {
+      synthSequencer().render(io);
+    }
+
+    void render(Graphics &g) {
+      synthSequencer().render(g);
+    }
+
+    void configureVoiceFromGui(VoiceType *voice) {
+        for (size_t i = 0; i < mControlVoice.triggerParameters().size(); i++) {
+            voice->triggerParameters()[i]->set(mControlVoice.triggerParameters()[i]);
+        }
+    }
+
+    void drawFields() {
+        for (auto *param : mControlVoice.triggerParameters()) {
+            ParameterGUI::drawParameterMeta(param);
+        }
+    }
+
+    void drawPresets(int columns = 12, int rows = 4) {
+        ParameterGUI::drawPresetHandler(&mPresetHandler, columns, rows);
+    }
+
+    void drawSynthSequencer() {
+        ParameterGUI::drawSynthSequencer(&mSequencer);
+    }
+
+    void drawSynthRecorder() {
+        ParameterGUI::drawSynthRecorder(&mRecorder);
+    }
+
+    void drawPresetSequencer() {
+        static int currentItem {0};
+        ParameterGUI::drawPresetSequencer(&mPresetSequencer, currentItem);
+    }
+
+    void drawPresetSequencerRecorder() {
+        ParameterGUI::drawSequenceRecorder(&mPresetSequenceRecorder);
+    }
+
+    void createBundle(uint8_t bundleSize) {
+        for (uint8_t i = 0; i < bundleSize; i++) {
+            auto voice = mSequencer.synth().template getVoice<VoiceType>();
+            auto bundle = std::make_shared<ParameterBundle>(demangle(typeid (mControlVoice).name()));
+            for(auto *param: voice->triggerParameters()) {
+                *bundle << param;
+            }
+            mBundles.push_back(bundle);
+            mBundleGui << *bundle;
+            mSequencer.synth().triggerOn(voice);
+        }
+    }
+
+    void drawBundle() {
+        if (mBundles.size() > 0) {
+            mBundleGui.drawBundleGUI();
+        }
+    }
+
+    void drawTriggerButton() {
+        std::string buttonName = mCurrentTriggerState ? "Turn off##paramGUI" : "Trigger##paramGUI" ;
+        if (ImGui::Button(buttonName.c_str(), ImVec2( ImGui::GetWindowWidth(), 40))) {
+             if (!mCurrentTriggerState) {
+               triggerOn();
+             } else {
+               triggerOff();
+             }
+        }
+    }
+
+    void drawAllNotesOffButton() {
+        std::string buttonName = "All notes off##paramGUI";
+        if (ImGui::Button(buttonName.c_str(), ImVec2( ImGui::GetWindowWidth(), 0))) {
+             synth().allNotesOff();
+        }
+    }
+
+    /**
+     * @brief Trigger a free voice. If no id provided the internal voice is triggered
+     * @param id
+     */
+    void triggerOn(int id = INT_MIN) {
+      if (id == INT_MIN) {
+        if (!mCurrentTriggerState) {
+           mTriggerVoiceId = mSequencer.synth().triggerOn(&mControlVoice, 0, INT_MIN);
+           mCurrentTriggerState = true;
+        }
+      } else {
+        VoiceType *voice = synth().template getVoice<VoiceType>();
+        configureVoiceFromGui(voice);
+        synth().triggerOn(voice, 0, id);
+      }
+    }
+
+    void triggerOff(int id = INT_MIN) {
+      if (id == INT_MIN) {
+        if (mCurrentTriggerState) {
+          mControlVoice.free();
+          while (mControlVoice.id() != -1) {
+            // Wait a bit
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+          }
+          mSequencer.synth().popFreeVoice(&mControlVoice);
+          mCurrentTriggerState = false;
+        }
+      } else {
+        synth().triggerOff(id);
+      }
+    }
+
+    bool triggerButtonState () {return mCurrentTriggerState;}
+
+    VoiceType *voice() {return &mControlVoice;}
+
+    void recallPreset(int index) {
+        mPresetHandler.recallPreset(index);
+    }
+
+    PresetSequencer &presetSequencer() {return mPresetSequencer;}
+    PresetHandler &presetHandler() {return mPresetHandler;}
+
+    PolySynth &synth() {return mSequencer.synth();}
+    SynthSequencer &synthSequencer() {return mSequencer;}
+    SynthRecorder &synthRecorder() {return mRecorder;}
+
+private:
+    std::string mName;
+    VoiceType mControlVoice;
+
+    PresetHandler mPresetHandler;
+    PresetSequencer mPresetSequencer;
+    SequenceRecorder mPresetSequenceRecorder;
+
+//    PolySynth *mSynth;
+    SynthSequencer mSequencer {PolySynth::TIME_MASTER_AUDIO};
+    SynthRecorder mRecorder;
+
+    std::vector<std::shared_ptr<ParameterBundle>> mBundles;
+    BundleGUIManager mBundleGui;
+
+    bool mCurrentTriggerState {false};
+    int mTriggerVoiceId {INT_MIN};
 };
 
 

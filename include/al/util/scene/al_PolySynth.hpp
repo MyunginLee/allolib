@@ -150,29 +150,32 @@ public:
      * @return true if able to set the fields
      *
      */
-  virtual bool setParamFields(float *pFields, int numFields = -1) {
-    if (numFields < (int) mParametersToFields.size()) {
+  virtual bool setTriggerParams(float *pFields, int numFields = -1) {
+    if (numFields < (int) mTriggerParams.size()) {
       // std::cout << "Pfield size mismatch. Ignoring all." << std::endl;
       return false;
     }
-    for (auto &param:mParametersToFields) {
+    for (auto &param:mTriggerParams) {
       param->fromFloat(*pFields++);
     }
     return true;
   }
 
   /**
-     * @brief Set parameter values
+     * @brief Set trigger parameter values
      * @param pFields std::vector<float> containing the values
      * @return true if able to set the fields
+     *
+     * Trigger parameters are parameters meant to be set at triggering,
+     * but that then stay constant throughout the duration of the instance.
      */
-  virtual bool setParamFields(std::vector<float> &pFields) {
-    if (pFields.size() < mParametersToFields.size()) {
+  virtual bool setTriggerParams(std::vector<float> &pFields) {
+    if (pFields.size() < mTriggerParams.size()) {
       // std::cout << "pField count mismatch. Ignoring." << std::endl;
       return false;
     }
     auto it = pFields.begin();
-    for (auto &param:mParametersToFields) {
+    for (auto &param:mTriggerParams) {
       param->fromFloat(*it++);
     }
     return true;
@@ -183,13 +186,13 @@ public:
      * @param pFields std::vector<float> containing the values
      * @return true if able to set the fields
      */
-  virtual bool setParamFields(std::vector<ParameterField> pFields) {
-    if (pFields.size() < mParametersToFields.size()) {
+  virtual bool setTriggerParams(std::vector<ParameterField> pFields) {
+    if (pFields.size() < mTriggerParams.size()) {
       // std::cout << "pField count mismatch. Ignoring." << std::endl;
       return false;
     }
     auto it = pFields.begin();
-    for (auto &param:mParametersToFields) {
+    for (auto &param:mTriggerParams) {
       if (it->type() == ParameterField::FLOAT) {
         param->fromFloat(it->get<float>());
       } else if (it->type() == ParameterField::STRING) {
@@ -215,8 +218,8 @@ public:
      * Copy the values from the internal parameters that have been
      * registered using registerParameterAsField or the << operator.
      */
-  int getParamFields(float *pFields, int maxParams = -1) {
-    std::vector<ParameterField> pFieldsVector = getParamFields();
+  int getTriggerParams(float *pFields, int maxParams = -1) {
+    std::vector<ParameterField> pFieldsVector = getTriggerParams();
     if (maxParams == -1) {
       assert(pFieldsVector.size() < INT_MAX);
       maxParams = int(pFieldsVector.size());
@@ -244,10 +247,10 @@ public:
      * registered using registerParameterAsField or the << operator. Override
      * this function in your voice if you need a different behavior.
      */
-  virtual std::vector<ParameterField> getParamFields() {
+  virtual std::vector<ParameterField> getTriggerParams() {
     std::vector<ParameterField> pFields;
-    pFields.reserve(mParametersToFields.size());
-    for (auto param: mParametersToFields) {
+    pFields.reserve(mTriggerParams.size());
+    for (auto param: mTriggerParams) {
       if (param) {
         if (strcmp(typeid(*param).name(), typeid(ParameterString).name() ) == 0) {
           pFields.push_back(static_cast<ParameterString *>(param)->get());
@@ -305,28 +308,44 @@ public:
     * */
   virtual void onTriggerOff() {}
 
-
-  /// This function can be called to programatically trigger  a voice.
-  /// It is used for example in PolySynth to trigger a voice.
+  /**
+   * @brief Trigger a note by calling onTriggerOn() and setting voice as active
+   * @param offsetFrames
+   *
+   * This function can be called to programatically trigger a voice.
+   * It is used for example in PolySynth to trigger a voice.
+   */
   void triggerOn(int offsetFrames = 0) {
     mOnOffsetFrames = offsetFrames;
     onTriggerOn();
     mActive = true;
   }
 
-  /// This function can be called to programatically trigger the release
-  /// of a voice.
+  /**
+   * @brief Call the voice's onTriggerOff() function to begin note's deactivation
+   * @param offsetFrames
+   *
+   * This function can be called to programatically trigger the release of a voice
+   */
   void triggerOff(int offsetFrames = 0) {
     mOffOffsetFrames = offsetFrames; // TODO implement offset frames for trigger off. Currently ignoring and turning off at start of buffer
     onTriggerOff();
   }
 
+  /**
+   * @brief Set the id for this voice
+   * @param idValue
+   */
   void id(int idValue) {mId = idValue;}
 
+  /**
+   * @brief Get the id for this voice
+   * @return
+   */
   int id() {return mId;}
 
   /**
-     * @brief returns the offset frames and sets them to 0.
+     * @brief returns the offset frames framesPerSecondand sets them to 0.
      * @param framesPerBuffer number of frames per buffer
      * @return offset frames
      *
@@ -341,16 +360,66 @@ public:
 
   void *userData() {return mUserData;}
 
+  /**
+   * @brief Query the number of channels this voice generates
+   * @return number of output channels
+   *
+   */
   unsigned int numOutChannels() { return mNumOutChannels; }
 
-  // Parameters to fields (i.e. parameters that are set at initialization only)
-  virtual SynthVoice& registerParameterAsField(ParameterMeta &param) { mParametersToFields.push_back(&param); return *this;}
 
-  SynthVoice& operator<<(ParameterMeta &param) {return registerParameterAsField(param);}
+  void createInternalTriggerParameter(std::string name, float defaultValue = 0.0, float minValue = -9999.0, float maxValue = 9999.0) {
+    mInternalParameters.push_back(std::make_shared<Parameter>(name, defaultValue, minValue, maxValue));
+    registerTriggerParameter(*mInternalParameters.back().get());
+  }
 
-  SynthVoice *next {nullptr}; // To support SynthVoices as linked lists
+  float getInternalParameterValue(std::string name) {
+    for (auto param: mInternalParameters) {
+      if (param->getName() == name) {
+        return param->get();
+      }
+    }
+    return 0.0;
+  }
 
-  std::vector<ParameterMeta *> parameterFields() {return mParametersToFields;}
+  void setInternalParameterValue(std::string name, float value) {
+    for (auto param: mInternalParameters) {
+      if (param->getName() == name) {
+        param->set(value);
+//        return;
+      }
+    }
+  }
+
+  /**
+   * @brief Register a parameter as a "trigger" parameter
+   * @param param
+   * @return this SynthVoice object
+   *
+   * Trigger parameters are parameters meant to be set prior to triggering
+   * the note and inserting it in the rendering chain. Trigger parameters
+   * are garanteed to be set synchronously right before the note starts.
+   * Additionally they are stored as values in a text file for the event
+   * sequencer and are sent as part of the /triggerOn message when running
+   * distributed.
+   */
+  virtual SynthVoice& registerTriggerParameter(ParameterMeta &param) { mTriggerParams.push_back(&param); return *this;}
+
+  /**
+   * Allows registering any number of trigger parameters on a single line
+   */
+  template<class... Args>
+  SynthVoice& registerTriggerParameters(Args &... paramsArgs) {
+      std::vector<ParameterMeta *> params{&paramsArgs...};
+      for (auto *param: params) {
+          registerTriggerParameter(*param);
+      }
+      return *this;
+  }
+
+  SynthVoice& operator<<(ParameterMeta &param) {return registerTriggerParameter(param);}
+
+  std::vector<ParameterMeta *> triggerParameters() {return mTriggerParams;}
 
   /**
    * @brief registerParameter
@@ -358,22 +427,30 @@ public:
    * @return
    *
    * Parameters are values that are meant to be updated while the voice is
-   * running, as opposed to parameters that are set at onTrigger().
-   * Fields will be stored in sequence text files, while voice parameters
-   * are meant to be changing within the voice. In distributed scenes, to
-   * synchronize the internal values within voices, the parameters must be
-   * registered through this function.
+   * running, as opposed to "trigger" parameters that are set at onTrigger().
+   * "Trigger" parameters will be stored in sequence text files, while
+   * regular parameters are meant to be changing within the voice.
+   * In distributed scenes, to synchronize the internal values within voices,
+   * the parameters must be registered through this function.
    */
   virtual SynthVoice& registerParameter(ParameterMeta &param) {
     mContinuousParameters.push_back(&param);
     return *this;
   }
 
+  /**
+   * Allows registering any number of parameters on a single line
+   */
+  template<class... Args>
+  SynthVoice& registerParameters(Args &... paramsArgs) {
+      std::vector<ParameterMeta *> params{&paramsArgs...};
+      for (auto *param: params) {
+          registerParameter(*param);
+      }
+  }
+
   std::vector<ParameterMeta *> parameters() {return mContinuousParameters;}
 
-protected:
-
-  ///
   /**
      * @brief Mark this voice as done.
      *
@@ -381,8 +458,15 @@ protected:
      * functions when envelope or time is done and no more processing for
      * the note is needed. The voice will be considered ready for retriggering
      * by PolySynth.
+     *
+     * It can also be used to force removal of a voice from the rendering chain
+     * without going through the release phase.
      */
   void free() {mActive = false; } // Mark this voice as done.
+
+  SynthVoice *next {nullptr}; // To support SynthVoices as linked lists
+
+protected:
   /**
      * @brief Set the number of outputs this SynthVoice generates
      * @param numOutputs
@@ -393,9 +477,11 @@ protected:
      */
   void setNumOutChannels(unsigned int numOutputs) {mNumOutChannels = numOutputs;}
 
-  std::vector<ParameterMeta *> mParametersToFields;
+  std::vector<ParameterMeta *> mTriggerParams;
 
   std::vector<ParameterMeta *> mContinuousParameters;
+
+  std::vector<std::shared_ptr<Parameter>> mInternalParameters;
 private:
   int mId {-1};
   int mActive {false};
@@ -455,7 +541,9 @@ public:
      * @param voice pointer to the voice to trigger
      * @return a unique id for the voice
      *
-     * You can use the id to identify the note for later triggerOff() calls
+     * You can use the id to identify the note for later triggerOff() calls.
+     * Always use a positive value for id, as negative ids have special treatment
+     * in classes like this one and SynthGUIManager
      */
   int triggerOn(SynthVoice *voice, int offsetFrames = 0, int id = -1, void *userData = nullptr);
 
@@ -528,6 +616,12 @@ public:
      * requested that will not be used.
      */
   void insertFreeVoice(SynthVoice *voice);
+
+  /**
+   * @brief Remove voice from the free voice pool
+   * @param voice
+   */
+  bool popFreeVoice(SynthVoice *voice);
 
   /**
      * @brief Set default user data to set to voices before the are returned
@@ -680,13 +774,12 @@ public:
         std::cout << "Allocating (from name) voice of type " << name << "." << std::endl;
       }
       SynthVoice *voice = mCreators[name]();
-      for(auto allocCb: mAllocationCallbacks) {
-        allocCb.first(voice, allocCb.second);
-      }
-      if(mDefaultUserData) {
-        voice->userData(mDefaultUserData); 
-      }
-      voice->init();
+//      for(auto allocCb: mAllocationCallbacks) {
+//        allocCb.first(voice, allocCb.second);
+//      }
+//      if(mDefaultUserData) {
+//        voice->userData(mDefaultUserData);
+//      }
       return voice;
     } else {
 
@@ -713,7 +806,7 @@ public:
   bool verbose() { return mVerbose; }
   void verbose(bool verbose) { mVerbose = verbose; }
 
-  // Testing function. Do not use...
+  // Use this function with care as there are no memory protections
   SynthVoice *getActiveVoices() {
     return mActiveVoices;
   }
@@ -794,16 +887,17 @@ protected:
       SynthVoice *previousVoice = nullptr;
       while(voice) {
         if (!voice->active()) {
-          voice->id(-1); // Reset voice id
           if (previousVoice) {
             previousVoice->next = voice->next; // Remove from active list
             voice->next = mFreeVoices;
             mFreeVoices = voice; // Insert as head in free voices
+            voice->id(-1); // Reset voice id
             voice = previousVoice; // prepare next iteration
           } else { // Inactive is head of the list
             mActiveVoices = voice->next; // Remove voice from list
             voice->next = mFreeVoices;
             mFreeVoices = voice; // Insert as head in free voices
+            voice->id(-1); // Reset voice id
             voice = mActiveVoices; // prepare next iteration
           }
         }

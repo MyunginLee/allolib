@@ -186,7 +186,9 @@ SynthVoice *PolySynth::getVoice(std::string name, bool forceAlloc)
     SynthVoice *freeVoice = mFreeVoices;
     SynthVoice *previousVoice = nullptr;
     while (freeVoice) {
+      if (verbose()) {
         std::cout << "Comparing  voice '" << demangle(typeid(*freeVoice).name()) << "' to '" << name << "'" << std::endl;
+      }
         if (demangle(typeid(*freeVoice).name()) == name
                 || strncmp(typeid(*freeVoice).name(),name.c_str(), name.size()) == 0 ) {
 
@@ -316,6 +318,26 @@ void PolySynth::insertFreeVoice(SynthVoice *voice) {
         mFreeVoices = voice;
         voice->next = nullptr;
     }
+}
+
+bool PolySynth::popFreeVoice(SynthVoice *voice) {
+    std::unique_lock<std::mutex> lk(mFreeVoiceLock);
+    SynthVoice *lastVoice = mFreeVoices;
+    SynthVoice *previousVoice = nullptr;
+    while (lastVoice) {
+        if (lastVoice == voice) {
+            if (previousVoice) {
+                previousVoice->next = lastVoice->next;
+                voice->next = nullptr;
+            } else {
+                mFreeVoices = lastVoice->next;
+                voice->next = nullptr;
+            }
+            return true;
+        }
+        lastVoice = lastVoice->next;
+    }
+    return false;
 }
 
 PolySynth &PolySynth::append(AudioCallback &v) {

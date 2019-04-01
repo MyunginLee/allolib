@@ -5,18 +5,15 @@ using namespace al;
 
 void SynthRecorder::startRecord(std::string name, bool overwrite, bool startOnEvent) {
     mOverwrite = overwrite;
-    mRecording = true;
     mStartOnEvent = startOnEvent;
+    mRecording = true;
     mSequenceStart = std::chrono::high_resolution_clock::now();
     mSequenceName = name;
 }
 
 void SynthRecorder::stopRecord() {
     mRecording = false;
-    std::string path = ".";
-    if (path.back() != '/') {
-        path += "/";
-    }
+    std::string path = File::conformDirectory(mDirectory);
     std::string fileName = path + mSequenceName + ".synthSequence";
 
     std::string newSequenceName = mSequenceName;
@@ -54,16 +51,16 @@ void SynthRecorder::stopRecord() {
             }
         }
     } else if (mFormat == SEQUENCER_EVENT) {
-        std::map<int, SynthEvent> eventStack;
+        std::map<int, SynthEvent *> eventStack;
         for (SynthEvent &event: mSequence) {
             if (event.type == SynthEventType::TRIGGER_ON) {
-                eventStack[event.id] = event;
+                eventStack[event.id] = &event;
             } else if (event.type == SynthEventType::TRIGGER_OFF) {
                 auto idMatch = eventStack.find(event.id);
                 if (idMatch != eventStack.end()) {
-                    double duration = event.time - idMatch->second.time;
-                    f << "@ " << idMatch->second.time << " " << duration << " " << idMatch->second.synthName << " ";
-                    for (auto &field : idMatch->second.pFields) {
+                    double duration = event.time - idMatch->second->time;
+                    f << "@ " << idMatch->second->time << " " << duration << " " << idMatch->second->synthName << " ";
+                    for (auto &field : idMatch->second->pFields) {
                         if (field.type() == ParameterField::STRING) {
                             f << "\"" << field.get<std::string>()<< "\" " ;
                         } else {
@@ -114,11 +111,12 @@ void SynthRecorder::stopRecord() {
     if (f.bad()) {
         std::cout << "Error while writing sequence file: " << fileName << std::endl;
     }
+    mSequence.clear();
     for (auto &instr: usedInstruments) {
         f << "# " << instr << " ";
         // Hack to get the parameter names. Get a voice from the polysynth and then check the parameters. Should there be a better way?
         auto *voice = mPolySynth->getVoice(instr);
-        for (auto p: voice->parameterFields()) {
+        for (auto p: voice->triggerParameters()) {
             f << p->getName() << " ";
         }
         f << std::endl;

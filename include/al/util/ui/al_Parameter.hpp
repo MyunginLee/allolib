@@ -150,6 +150,8 @@ public:
         std::cout << "sendValue function not implemented for " << typeid(*this).name() << std::endl;
     }
 
+    void set(ParameterMeta *p);
+
 protected:
 	std::string mFullAddress;
 	std::string mParameterName;
@@ -391,12 +393,16 @@ public:
    * single float. It realies on float being atomic on the platform so there
    * is no locking. This is a safe assumption for most platforms today.
    */
-    Parameter(std::string parameterName, std::string Group = "",
+    Parameter(std::string parameterName, std::string Group,
               float defaultValue = 0,
 	          std::string prefix = "",
 	          float min = -99999.0,
 	          float max = 99999.0
 	        );
+
+    Parameter(std::string parameterName, float defaultValue = 0, float min = -99999.0,
+              float max = 99999.0
+            );
 
 	Parameter(const al::Parameter& param) :
 	    ParameterWrapper<float>(param)
@@ -436,7 +442,7 @@ public:
 	}
 
 	virtual void fromFloat(float value) override {
-		mFloatValue = value;
+        set(value);
 	}
 
 	float operator= (const float value) { this->set(value); return value; }
@@ -513,7 +519,7 @@ public:
 	}
 
 	virtual void fromFloat(float value) override {
-        mIntValue = int32_t(value);
+        set(int32_t(value));
 	}
 
     float operator= (const int32_t value) { this->set(value); return float(value); }
@@ -633,7 +639,10 @@ public:
 
 	ParameterVec3 operator=(const Vec3f vec) {this->set(vec); return *this;}
 
-	float operator[](size_t index) { Vec3f vec = this->get(); return vec[index];}
+    float operator[](size_t index) {
+      assert(index < INT_MAX); // Hack to remove
+      Vec3f vec = this->get(); return vec[int(index)];
+    }
 
     virtual void sendValue(osc::Send &sender) override {
         Vec3f vec = get();
@@ -652,7 +661,9 @@ public:
 
 	ParameterVec4 operator=(const Vec4f vec) {this->set(vec); return *this;}
 
-	float operator[](size_t index) { Vec4f vec = this->get(); return vec[index];}
+    float operator[](size_t index) {
+      Vec4f vec = this->get(); return vec[index];
+    }
 
     virtual void sendValue(osc::Send &sender) override {
         Vec4f vec = get();
@@ -703,14 +714,15 @@ public:
 
 	std::vector<std::string> getElements() { return mElements; }
 
-	std::string getCurrent() {
-		if (mElements.size() > 0) {
-			return mElements[get()];
-		}
-		else {
-			return "";
-		}
-	}
+    std::string getCurrent() {
+      int current = get();
+      if (mElements.size() > 0 && current >=0 && current < int(mElements.size())) {
+        return mElements[get()];
+      }
+      else {
+        return "";
+      }
+    }
 
     void setCurrent(std::string element) {
         auto position = std::find(mElements.begin(), mElements.end(), element);

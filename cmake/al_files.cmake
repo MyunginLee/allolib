@@ -95,14 +95,10 @@ if(AL_COMPOSITE_BUILD)
     ${al_path}/src/core/graphics/graphics_all.cpp
     ${al_path}/src/core/app/app_all.cpp
     ${al_path}/src/core/io/io_all.cpp
+    ${al_path}/src/core/sound/sound_all.cpp
 
     ${al_path}/src/core/math/al_StdRandom.cpp
     ${al_path}/src/core/protocol/al_OSC.cpp
-    ${al_path}/src/core/sound/al_Ambisonics.cpp
-    ${al_path}/src/core/sound/al_AudioScene.cpp
-    ${al_path}/src/core/sound/al_Biquad.cpp
-    ${al_path}/src/core/sound/al_Dbap.cpp
-    ${al_path}/src/core/sound/al_Vbap.cpp
     ${al_path}/src/core/spatial/al_HashSpace.cpp
     ${al_path}/src/core/spatial/al_Pose.cpp
     ${al_path}/src/core/system/al_PeriodicThread.cpp

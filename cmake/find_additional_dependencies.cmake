@@ -25,7 +25,10 @@ ${al_path}/cmake/find_scripts
 )
 
 find_package(Assimp QUIET)
+if(USE_MPI)
 find_package(MPI QUIET)
+endif()
+
 
 # Cuttlebone
 set(CUTTLEBONE_SRC_DIR "${CMAKE_SOURCE_DIR}/../cuttlebone")

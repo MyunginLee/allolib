@@ -147,18 +147,20 @@ if [ ${BUILD_TYPE} == "Debug" ]; then
   TARGET_NAME=${TARGET_NAME}_debug
 fi
 
-echo cmake --build . --target ${TARGET_NAME} --config ${BUILD_TYPE} -- ${BUILD_FLAGS}
-
 # set -x enters debug mode and prints the command
+if [ ${IS_VERBOSE} != 1 ]; then
+exec 6>&1
+exec >${AL_LIB_PATH}/build.log
+fi
 set -x
 cmake --build . --target ${TARGET_NAME} --config ${BUILD_TYPE} -- ${BUILD_FLAGS}
-set +x
 )
+
 
 APP_BUILD_RESULT=$?
 # if app failed to build, exit
-if [ ${APP_BUILD_RESULT} != 0 ]; then
-  echo "app ${APP_NAME} failed to build"
+if [ ${APP_BUILD_RESULT} != 0 ] && [ ${IS_VERBOSE} != 1 ]; then
+  cat ${AL_LIB_PATH}/build.log
   exit 1
 fi
 
